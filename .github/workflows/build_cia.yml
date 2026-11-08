@@ -1,0 +1,43 @@
+name: Build Flappy Bird 2DS CIA & 3DSX
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitarm:latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install makerom & bannertool
+        run: |
+          apt-get update && apt-get install -y wget unzip
+
+          mkdir -p tools/bin
+
+          wget -q https://github.com/3DSGuy/Project_CTR/releases/download/makerom-v0.18.4/makerom-v0.18.4-ubuntu_x86_64.zip -O /tmp/makerom.zip
+          unzip -o /tmp/makerom.zip -d tools/bin/
+          chmod +x tools/bin/makerom
+
+          wget -q https://github.com/diasurgical/bannertool/releases/download/1.2.0/bannertool.zip -O /tmp/bannertool.zip
+          unzip -o -j /tmp/bannertool.zip linux-x86_64/bannertool -d tools/bin/
+          chmod +x tools/bin/bannertool
+
+      - name: Compile flappy.3dsx and flappy.cia
+        run: |
+          export PATH="$PWD/tools/bin:/opt/devkitpro/devkitARM/bin:$PATH"
+          make cia
+
+      - name: Upload flappy.cia & flappy.3dsx Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: flappy-2ds-cia
+          path: |
+            flappy.cia
+            flappy.3dsx
+            flappy.smdh
+            tools/remote_install_cia.py
